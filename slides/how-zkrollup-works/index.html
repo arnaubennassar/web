@@ -1,0 +1,221 @@
+---
+title: zkRollup SLides
+---
+
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>zkRollup slides</title>
+
+		<link rel="stylesheet" href="../revealjs/dist/reset.css">
+		<link rel="stylesheet" href="../revealjs/dist/reveal.css">
+		<link rel="stylesheet" href="theme/polygon.css">
+
+		<!-- Theme used for syntax highlighted code -->
+		<link rel="stylesheet" href="../revealjs/plugin/highlight/monokai.css">
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section>
+					<br/>
+					<br/>
+					<br/>
+					<h3>How zkRollup works</h3>
+					<img data-src="assets/polygon-hermez.png">
+					<br/>
+					<br/>
+					<br/>
+					<p>
+						<small>Find the slides at <a href="https://arnaubennassar.github.io/slides">arnaubennassar.github.io/slides</a></small>
+					</p>
+
+					<aside class="notes">
+						GM, I'm AB backend team lead @ PH, and today Im here to talk about how ZKR work.
+					</aside>
+				</section>
+				<section>
+					<h2>Agenda</h2>
+					<ol>
+						<li>Why zkRollups?</li>
+						<li>How do they work?</li>
+						<li>Problems</li>
+						<li>Solutions</li>
+						<li>Implementation</li>
+					</ol>
+
+					<aside class="notes">
+						We'll start with a short intro on why are rollups needed and how do they work in general.
+						<br/>
+						Then I'm going to give an opinionated answer on if rollups can actually solve the intended problem.
+						<br/>
+						Finally I'll explain how such a system can be implemented.
+						<br/>
+						DISCLAIMER: there are many implementation decisions that can be made, some of the stuff that I'll mention refers to how we're doing it at PH.
+						Also this talk we'll treat the ZK stuff as a black box. Im not expert in ZK, and I'm sure there is people in this audience that knows way more than me about this topic
+					</aside>
+				</section>
+				<section>
+					<h2>Why zkRollups?</h2>
+					<img data-src="assets/trilema.png">
+
+					<aside class="notes">
+						I guess that you all know the blockchain trilema, but anyway:
+						<br/>
+						The idea is that you cannot have at the same time a system that is fully secure, decentralized, and scalable.
+						<br/>
+						You've to compromise in one of this areas.
+						<br/>
+						Rollups are supposed to solve this by borrowing the security and decentralization from a L1, and bringing scalability on top.
+					</aside>
+				</section>
+				<section>
+					<h2>How do they work?</h2>
+					<img data-src="assets/abstract-implementation.drawio.png">
+
+					<aside class="notes">
+						So, how they work? [explain diagram]
+					</aside>
+				</section>
+				<section>
+					<h2>Problems</h2>
+					<ol>
+						<li>Security?</li>
+						<li>Centralization?</li>
+						<li>Scalable?</li>
+					</ol>
+
+					<aside class="notes">
+						Can the trilema be really fixed by rollups? Let's analyze them one by one...
+					</aside>
+				</section>
+				<section>
+					<h3>Solutions - Security</h3>
+					<h1>audit ZK and smart contracts</h1>
+
+					<aside class="notes">
+						In terms of security rollups need to add SCs that contain the ZK verifier,
+						so as long as those are well audited and tested we could say that yes, we inherit 
+						the security of L1... Just like any other SC, [hironic] and as you know, no SC has been ever hacked. 
+					</aside>
+				</section>
+				<section>
+					<h3>Solutions - Centralization</h3>
+					<p>Enable multiple operators, <b>consensus mechanisms:</b></p>
+					<ul>
+						<li>Governance: DAO decides who has the right to add new blocks</li>
+						<li>100% permission less: anyone can create new blocks</li>
+						<li>Turn based: SC decide who can add blocks at a given time</li>
+						<li>Proof of Efficiency</li>
+					</ul>
+
+					<aside class="notes">
+						Centralization is a bit more complicated... it actually depends on the consensus mechanism, in other words
+						from who the SC accepts the blocks. This can be done in different ways, some examples: (explain bullet points)
+					</aside>
+				</section>
+				<section>
+					<h2>Proof of Donation</h2>
+					<ul>
+						<li>Implementation of a "turn based" mechanism used in Hermez Network 1.0</li>
+						<li>Time slots are auctioned to best bidder</li>
+						<li>Auction winner can send blocks in a specific time window</li>
+					</ul>
+
+					<aside class="notes">
+						PoD is the implementation we used for Hermez 1.0, it's basically an auction where participants
+						bid to gain right to mine blocks for given time slots.
+						We also included a deathline that when exceeded opened the slot for everyone.
+					</aside>
+				</section>
+				<section>
+					<h2>Proof of Efficiency</h2>
+					<ul>
+						<li>Split the sequence and the proofing in two steps</li>
+						<li>Both steps are 100% permissionless (anyone, anytime)</li>
+						<li>Two states: virtual vs consolidated</li>
+					</ul>
+
+					<aside class="notes">
+						PoE is what we're working on for Hermez 2.0. The main idea is to split the process of making data available
+						and proofing state transitions. Both steps are truly decentralized, in the sense that anyone at any point in time
+						can participate in them. 
+					</aside>
+				</section>
+				<section>
+					<h2>Proof of Efficiency</h2>
+					<img data-src="assets/PoE.drawio.png">
+
+					<aside class="notes">
+						explain diagram
+					</aside>
+				</section>
+				<section>
+					<h3>Solutions - Scalability</h3>
+					<ul>
+						<li>Latency / Finality: L2 >= L1</li>
+						<li>Throughput / txs/s: limited by data availability</li>
+						<li>max txs/s = L1 block size / L2 tx size / L1 block time</li>
+					</ul>
+
+					<aside class="notes">
+						We've seen that we can actually keep the decentralization and security properties of the L1 without huge compromises
+						Now the key question is can we actually provide the promised scalability?
+
+						IMO there is two key metrics for scalability: bandwith and latency.
+						In terms of latency, we still relay on L1
+						However on throughput, we're basically limited to the block space: so how many bytes do we have to store the data availability...
+					</aside>
+				</section>
+				<section>
+					<h2>Implementation</h2>
+					<img data-src="assets/implementation.drawio.png">
+
+					<aside class="notes">
+						explain diagram
+					</aside>
+				</section>
+				<section>
+					<h2>Interesting resources</h2>
+					<ul>
+						<li><a href="https://ethresear.ch/t/proof-of-efficiency-a-new-consensus-mechanism-for-zk-rollups/11988">
+							Proof of Efficiency
+						</a></li>
+						<li><a href="https://www.youtube.com/watch?v=-kfH4U84VUo">
+							zkEVM and rollup bridge 
+						</a></li>
+						<li><a href="https://github.com/hermeznetwork">
+							Polygon Hermez GitHub
+						</a></li>
+					</ul>
+				</section>
+				<section>
+					<h1>We're hiring!</h1>
+					<img data-src="assets/polygon-hermez.png">
+				</section>
+				<section>
+					<h1>Q&A</h1>
+				</section>
+			</div>
+		</div>
+
+		<script src="../revealjs/dist/reveal.js"></script>
+		<script src="../revealjs/plugin/notes/notes.js"></script>
+		<script src="../revealjs/plugin/markdown/markdown.js"></script>
+		<script src="../revealjs/plugin/highlight/highlight.js"></script>
+		<script>
+			// More info about initialization & config:
+			// - https://revealjs.com/initialization/
+			// - https://revealjs.com/config/
+			Reveal.initialize({
+				hash: true,
+
+				// Learn about plugins: https://revealjs.com/plugins/
+				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]
+			});
+		</script>
+	</body>
+</html>
