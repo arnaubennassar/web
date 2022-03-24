@@ -1,0 +1,214 @@
+---
+title: PoE Slides
+---
+
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>PoE slides</title>
+
+		<link rel="stylesheet" href="../revealjs/dist/reset.css">
+		<link rel="stylesheet" href="../revealjs/dist/reveal.css">
+		<link rel="stylesheet" href="../theme/polygon.css">
+
+		<!-- Theme used for syntax highlighted code -->
+		<link rel="stylesheet" href="../revealjs/plugin/highlight/monokai.css">
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section>
+					<br/>
+					<h1>Proof of Efficiency</h1>
+					<h3>Decentralization for the zkEVM</h3>
+					<img data-src="assets/polygon-hermez.png">
+					<p>
+						<small>Find the slides at <a href="https://arnau.eth.link/slides/PoE/index.html">arnau.eth.link/slides/PoE</a></small>
+					</p>
+
+					<aside class="notes">
+						gm, I'm AB team lead at PH. We're working very hard to bring the first zkRollup fully EVM compatible.
+						And today im going to talk about consensus protocols for rollups.
+					</aside>
+				</section>
+				<section>
+					<h2>What is a Rollup <del>block</del> <b>batch</b>?</h2>
+					<img data-src="assets/rollup-batch.drawio.png">
+
+					<aside class="notes">
+						so im not going to explain what a zkRollup is, but jus for the sake of this presentation let's go through some basics...
+						a rollup it's essentially a SC that stores L2 blocks, we call them batches to not create confusion. The idea is that a L1 block can have
+						0, 1 or many batches. A batch contains the list of txs, 
+						and the root  which is basically a hash of the entire state after processing the txs on top of the previous state. In order to demonstrate
+						that this root is correct a ZKP is included.
+					</aside>
+				</section>
+				<section>
+					<h2>How batches are added into a rollup?</h2>
+					<img data-src="assets/add-block.drawio.png">
+
+					<aside class="notes">
+						How this batches are created? Introducing our lovely rollup operator: this guy is responsible for collecting txs from users,
+						creating a sequence and then generating a ZKP that proofs that when processing this txs on top of the previous state we move on to the next state.
+						Finally the operator sends a L1 tx with the L2txs and the ZKP. If the ZKP is correct the SC will add the new batch.
+
+						Amazing isn't it?
+					</aside>
+				</section>
+				<section>
+					<img data-src="assets/cheap-but-centralized-slow.jpg">
+
+					<aside class="notes">
+						Well... not everything is perfect with this design
+					</aside>
+				</section>
+				<section>
+					<h2>Slow</h2>
+					<img data-src="assets/add-block-slow.drawio.png">
+
+					<aside class="notes">
+						First of all ZKPs take a lot of time to be generated, and this affects directly on the finality...
+						Receiving the txs and creating the sequence is quite fast but it takes several minutes for the ZKP to be generated.
+						On top of that we still have to send the L1 tx.
+					</aside>
+				</section>
+				<section>
+					<h2>Centralized</h2>
+					<ul>
+						<li>Trustless: can't perform actions on behalf ot the user</li>
+						<li>Censorship: can blacklist users</li>
+						<li>Stoppable: single point of failure</li>
+					</ul>
+					<img data-src="assets/add-block-centralized.drawio.png">
+
+					<aside class="notes">
+						A part from that the design is centralized. We could have a SC that accepts txs from everyone but this will get unusable 
+						because remember that ZKPs have to be computed on top of the previous state and they take time to be built, 
+						so making the previous state unpredictable is horrible for operators.
+						And so it's just easier to only accept txs from a single authority.
+						The good news is that this design is still trustless because the ZKP will only make signed txs by users valid.
+						On the other hand the operator could censor users or decide to stop the network by not sending new batches. 
+					</aside>
+				</section>
+				<section>
+					<h2>Proof of Efficiency</h2>
+					<ul>
+						<li>Finality: separate sequencing and proofing in 2 async steps</li>
+						<li>Decentralization: send sequence and proofs permissionless</li>
+					</ul>
+
+					<aside class="notes">
+						So how we plan to fix this? We've come up with a protocol that we named PoE.
+						The main idea of the protocol is to separate the sequencing and the proofing into 2 different steps.
+						And by doing so we enable a fully permissionless participation on the network.
+					</aside>
+				</section>
+				<section>
+					<img data-src="assets/poe-batch.drawio.png">
+
+					<aside class="notes">
+						With this design, the rollup SC mannage two different states: the virtual and the consolidated.
+						The virtual state is made by batches that only contain the txs but they have no proof yet, so the L1 can't know the result of executing this txs.
+						The cool thing is that anyone can actually sync the virtual state and know the outcome of executing the txs, because executing txs is a deterministic process.
+						The consolidated state take the already submitted txs and proof the execution using a ZKP making the root available.
+					</aside>
+				</section>
+				<section>
+					<h2>How virtual batches are added?</h2>
+					<img data-src="assets/add-virtual-block.drawio.png">
+
+					<aside class="notes">
+						So now we have a different kind of operator that we call sequencer.
+						Sequencers only have one job: receiving txs and sorting them to make them available on L1.
+						Since they don't have to build the ZKPs this process should take similar time compared to just sending a L1 tx.
+					</aside>
+				</section>
+				<section>
+					<h2>How virtual batches are added?</h2>
+					<img data-src="assets/multi-sequencer.drawio.png">
+
+					<aside class="notes">
+						Also because sequencers don't care about ZKPs, they don't need to know the state of the previous virtual batch, and so we can open
+						the network to anyone. We could have many sequencers sending virtual batches to the SC concurrently, and Ethereum will take care of
+						ordering all this batches.
+						Since anyone can send virtual batches, we achieve censorship resistance: if you're being blacklisted, you can send your own virtual batch.
+					</aside>
+				</section>
+				<section>
+					<h2>How batches are consolidated?</h2>
+					<img data-src="assets/add-consolidated-block.drawio.png">
+
+					<aside class="notes">
+						The other new actor we introduce to replace the monolithic rollup operator is the aggregator. Aggregators take sequences of txs that
+						have already been published as virtual batches and generate proofs for them. And of course this proofs are sent to L1 to consolidate the batches.
+					</aside>
+				</section>
+				<section>
+					<h2>How batches are consolidated?</h2>
+					<img data-src="assets/multi-aggregator.drawio.png">
+
+					<aside class="notes">
+						Unfortunately the aggregators are not concurrency safe as the sequencers,
+						because for each virtual batch there is only one valid proof that can be submitted.
+						So if many aggregators try to proof the same batch, only the first one is going to make it.
+						Eventually we think that only the most efficient aggregators will participate on the network,
+						because the others will always lose against them. But even if the network ends up having only a single aggregator,
+						this is ok. At the end of the day aggregators can only do 2 things: submit invalid proofs that got rejected and have no effect
+						or submit valid proofs and consolidate the txs that were already sent.
+					</aside>
+				</section>
+				<section>
+					<img data-src="assets/poe-batch-extended.drawio.png">
+
+					<aside class="notes">
+						In summary, we have sequencers sending txs to the network, without having to worry about concurrency and
+						aggregators fighting to have the fastest ZK technology to consolidate as many batches as possible.
+						But why should any of them want to participate in the network?
+					</aside>
+				</section>
+				<section>
+					<h2>What about incentives?</h2>
+					<ul>
+						<li>Sequencers: collect fees from L2 txs</li>
+						<li>Aggregators: get paid by sequencers</li>
+					</ul>
+					<img data-src="assets/incentives.drawio.png">
+
+					<aside class="notes">
+						Well, the protocol obviously has an incentive layer to attract participants.
+						The idea is that sequencers collect the fees from the txs, this way they're incentivized to came up with the best possible sequence.
+						Sequencers will have to pay a collateral to the aggregators as a reward for generating the ZKPs.
+						We don't have a final formula, but the idea is that the more unconsolidated batches there are, the more expensive the collateral is.
+						By doing so we aim to reach an equilibrium point that makes the gap between virtual and consolidatred state not too big. 
+					</aside>
+				</section>
+				<section>
+					<h1>#WAGMI</h1>
+
+					<aside class="notes">
+						That's all, hope ou enjoyed the presentation. Feel free to reach me later if you'va ny question.
+					</aside>
+				</section>
+			</div>
+		</div>
+
+		<script src="../revealjs/dist/reveal.js"></script>
+		<script src="../revealjs/plugin/notes/notes.js"></script>
+		<script src="../revealjs/plugin/markdown/markdown.js"></script>
+		<script src="../revealjs/plugin/highlight/highlight.js"></script>
+		<script>
+			// More info about initialization & config:
+			// - https://revealjs.com/initialization/
+			// - https://revealjs.com/config/
+			Reveal.initialize({
+				hash: true,
+
+				// Learn about plugins: https://revealjs.com/plugins/
+				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]
+			});
+		</script>
+	</body>
+</html>
