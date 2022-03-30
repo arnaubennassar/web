@@ -30,6 +30,23 @@ title: PoE Slides
 					</p>
 
 					<aside class="notes">
+						- AB
+						<br/>
+						- PH
+						<br/>
+						- first zkEVM
+						<br/>
+						- Concensus for rollup
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
 						gm, I'm AB team lead at PH. We're working very hard to bring the first zkRollup fully EVM compatible.
 						And today im going to talk about consensus protocols for rollups.
 					</aside>
@@ -39,6 +56,27 @@ title: PoE Slides
 					<img data-src="assets/rollup-batch.drawio.png">
 
 					<aside class="notes">
+						- Not going to explain ZKR but...
+						<br/>
+						- SC containing L2 blocks
+						<br/>
+						- We call it batches
+						<br/>
+						- L1 block can contain 0, 1 or many batches
+						<br/>
+						- L2 batch = txs, ZKP, root
+						<br/>
+						- prev state + txs & ZKP = new state (root)
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
 						so im not going to explain what a zkRollup is, but jus for the sake of this presentation let's go through some basics...
 						a rollup it's essentially a SC that stores L2 blocks, we call them batches to not create confusion. The idea is that a L1 block can have
 						0, 1 or many batches. A batch contains the list of txs, 
@@ -51,6 +89,25 @@ title: PoE Slides
 					<img data-src="assets/add-block.drawio.png">
 
 					<aside class="notes">
+						- how batches created / introducing rollup operator
+						<br/>
+						1. gathering txs
+						<br/>
+						2. sequencing
+						<br/>
+						3. generating ZKP
+						<br/>
+						4. send L1 tx
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
 						How this batches are created? Introducing our lovely rollup operator: this guy is responsible for collecting txs from users,
 						creating a sequence and then generating a ZKP that proofs that when processing this txs on top of the previous state we move on to the next state.
 						Finally the operator sends a L1 tx with the L2txs and the ZKP. If the ZKP is correct the SC will add the new batch.
@@ -70,6 +127,19 @@ title: PoE Slides
 					<img data-src="assets/add-block-slow.drawio.png">
 
 					<aside class="notes">
+						- ZKP take a lot of time to be generated
+						<br/>
+						- The other steps basically relay on L1 tx
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
 						First of all ZKPs take a lot of time to be generated, and this affects directly on the finality...
 						Receiving the txs and creating the sequence is quite fast but it takes several minutes for the ZKP to be generated.
 						On top of that we still have to send the L1 tx.
@@ -78,13 +148,32 @@ title: PoE Slides
 				<section>
 					<h2>Centralized</h2>
 					<ul>
-						<li>Trustless: can't perform actions on behalf ot the user</li>
+						<li>Trustless: can't perform actions on behalf of the user</li>
 						<li>Censorship: can blacklist users</li>
 						<li>Stoppable: single point of failure</li>
 					</ul>
 					<img data-src="assets/add-block-centralized.drawio.png">
 
 					<aside class="notes">
+						- We could accepts all txs @ SC
+						<br/>
+						- Bad idea because collisions, have to be based on prev root
+						<br/>
+						- easier to have a single authority
+						<br/>
+						- good news: trustless only user signed txs
+						<br/>
+						censorship and can be stopped
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
 						A part from that the design is centralized. We could have a SC that accepts txs from everyone but this will get unusable 
 						because remember that ZKPs have to be computed on top of the previous state and they take time to be built, 
 						so making the previous state unpredictable is horrible for operators.
@@ -101,6 +190,21 @@ title: PoE Slides
 					</ul>
 
 					<aside class="notes">
+						- How to fix? PoE
+						<br/>
+						- Split sequencing and proofing
+						<br/>
+						- Enable permissionless participation
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
 						So how we plan to fix this? We've come up with a protocol that we named PoE.
 						The main idea of the protocol is to separate the sequencing and the proofing into 2 different steps.
 						And by doing so we enable a fully permissionless participation on the network.
@@ -110,10 +214,57 @@ title: PoE Slides
 					<img data-src="assets/poe-batch.drawio.png">
 
 					<aside class="notes">
-						With this design, the rollup SC mannage two different states: the virtual and the consolidated.
-						The virtual state is made by batches that only contain the txs but they have no proof yet, so the L1 can't know the result of executing this txs.
-						The cool thing is that anyone can actually sync the virtual state and know the outcome of executing the txs, because executing txs is a deterministic process.
-						The consolidated state take the already submitted txs and proof the execution using a ZKP making the root available.
+						- Two different states: virtual / consolidated
+						<br/>
+						- virtual: txs
+						<br/>
+						- consolidated: proof & root
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						With this design, the rollup SC manages two different states: the virtual and the consolidated.
+						The virtual state is made by batches that only contain the txs but they don't have the proof yet.
+						The consolidated state take the already submitted txs and proof the execution of them and how do they affect the state.
+					</aside>
+				</section>
+				<section>
+					<h2>Virtual state is valid & accessible</h2>
+					<img data-src="assets/poe-batch-virtual.drawio.png">
+
+					<aside class="notes">
+						- txs available to anyone
+						<br/>
+						- nodes can sync
+						<br/>
+						- deterministic state
+						<br/>
+						- anything on L1, cat picture, no-op txs
+						<br/>
+						- RPC service, finality
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						The cool thing about virtual batches is that they make the txs available to anyone. This enables rollup nodes
+						to sync the virtual state: this basically consists on executing those txs contained on the batches in order to update the state.
+						The crazy thing is that because there is no check at all done on L1, the "txs" of a batch could be literally anything:
+						from a valid sequence of txs to a cute picture of a cat!
+						But that's ok, executing virtual batches has always a deterministic outcome. So anything that is not a valid tx, will just
+						have 0 impact on the state... And whoever sent the invalid tx lose money because they have to send a L1 tx in order to add a virtual batch.
+						Once a rollup node has synced the virtual state, it can properly give service to wallets and others, making the network available to it's final users. 
 					</aside>
 				</section>
 				<section>
@@ -121,9 +272,32 @@ title: PoE Slides
 					<img data-src="assets/add-virtual-block.drawio.png">
 
 					<aside class="notes">
-						So now we have a different kind of operator that we call sequencer.
-						Sequencers only have one job: receiving txs and sorting them to make them available on L1.
+						- sequencer, new type of operator
+						<br/>
+						- one job: sequence availability
+						<br/>
+						- fast: no ZKP, similar time to sending L1 tx
+						<br/>
+						- nodes will sync, finality
+						<br/>
+						- best speed a rollup can achieve trustless
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						Since we splitted the batch creation in to steps, we do the same for the rollup operator.
+						We call the actors responsible for adding virtual batches sequencers.
+						Sequencers have a very clear mission: receiving txs and sorting them to make them available on L1.
 						Since they don't have to build the ZKPs this process should take similar time compared to just sending a L1 tx.
+						Now, remember that rollup nodes will be syncing those virtual batches, and they will be sharing this information with final users,
+						therefore once a tx gets included on a virtual batch it's considered final. And what this actually means, is that finality should be very
+						close to the one that L1 has, which is the best that a rollup can offer to it's users in a trustless way.
 					</aside>
 				</section>
 				<section>
@@ -131,10 +305,84 @@ title: PoE Slides
 					<img data-src="assets/multi-sequencer.drawio.png">
 
 					<aside class="notes">
-						Also because sequencers don't care about ZKPs, they don't need to know the state of the previous virtual batch, and so we can open
-						the network to anyone. We could have many sequencers sending virtual batches to the SC concurrently, and Ethereum will take care of
-						ordering all this batches.
-						Since anyone can send virtual batches, we achieve censorship resistance: if you're being blacklisted, you can send your own virtual batch.
+						- no worry about previous state, concurrency
+						<br/>
+						- example: 3 sequencers, unknown order
+						<br/>
+						- some txs get rejected, not common case
+						<br/>
+						- permissionless, decentralized
+						<br/>
+						- censorship resistance
+						<br/>
+						- unstoppable
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						With this construct, sequencers don't need to know the previous batch in order to add the next one. And so,
+						sequencers can send batches concurrently, and the L1 will take care of including them on a specific order.
+						This order will be the one used to process the state, and definitely will affect the result of executing the txs.
+						
+						Let me give an example: if we've three sequencers trying to add different batches at the same time, each sequencer will not know
+						in which exact position theyr batch is going to be inserted. This fact opens the door for some failing txs due to not knowing
+						the exact state there was when the tx is actually executed.
+
+						But this shouldn't be the most common case at all, and sequencers can have this on mind when building batches.
+
+						On the other hand, by doing this we have a permissionless setup in which anyone can add batches at any point in time.
+						In other words, the network becomes decentralized. And users have the guarantee that in the worst case scenario they will
+						always be able to send a L1 tx including all the L2 txs they want. Hance we effectively remove the censorship and single point of failure problems.
+					</aside>
+				</section>
+				<section>
+					<h2>... Then, why do we need the consolidated state?</h2>
+					<ul>
+						<li>The L1 doesn't know the state, it just have the list of txs</li>
+						<li>Consensus</li>
+						<li>Enable on-chain bridges, <a href="https://youtube.com/watch?v=-kfH4U84VUo">@jbaylina explaining it at Liscon</a></li>
+					</ul>
+
+					<aside class="notes">
+						- then why consolidated state?
+						<br/>
+						- how to know we're all in the same page?
+						<br/>
+						- ZKPs --> root
+						<br/>
+						- L1 aware --> bridge
+						<br/>
+						- jordi baylina liscon
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						You may be thinking, if we can relay on the virtual state, why bother with the consolidated and all the ZK magic?
+
+						Well, even if I have a node, and I trust that I have done everything correctly, how could I be sure that all the other nodes have reached
+						the same conclusion I did? And by this I mean, how could I know that we all agree on the same state?
+						
+						By sending ZKPs to L1, we can store the root of the state, which again, this is a hash of the entire state. 
+						And this is the way the network reaches consensus: if you're state root matches the one in the rollup SC, you're good to go.
+
+						On the other hand, making the L1 aware of the L2 state, enables the creation for on-chain bridges... I'm pretty sure you all have
+						heard horrible news about bridges being hacked, and it's very clear that bridges will get even more popular. Having on-chain bridges,
+						is far more secure, decentralized and trustless. 
+
+						If you're interested on learning how such a bridge could be built, I've left a link of a presentation done by 
+						Jordi Baylina at Liscon, explaining it. You can find it as well by searching Jordi Baylina Liscon on youtube.
 					</aside>
 				</section>
 				<section>
@@ -142,6 +390,23 @@ title: PoE Slides
 					<img data-src="assets/add-consolidated-block.drawio.png">
 
 					<aside class="notes">
+						- new actor: aggregator
+						<br/>
+						- sync virtual batches
+						<br/>
+						- generate proof
+						<br/>
+						- send to L1, consolidate batch
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
 						The other new actor we introduce to replace the monolithic rollup operator is the aggregator. Aggregators take sequences of txs that
 						have already been published as virtual batches and generate proofs for them. And of course this proofs are sent to L1 to consolidate the batches.
 					</aside>
@@ -151,6 +416,27 @@ title: PoE Slides
 					<img data-src="assets/multi-aggregator.drawio.png">
 
 					<aside class="notes">
+						- not concurrency safe
+						<br/>
+						- one proof per batch
+						<br/>
+						- only the most performant
+						<br/>
+						- ok being centralized
+						<br/>
+						- no harm either OK or no-op
+						<br/>
+						- anyone can came in
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
 						Unfortunately the aggregators are not concurrency safe as the sequencers,
 						because for each virtual batch there is only one valid proof that can be submitted.
 						So if many aggregators try to proof the same batch, only the first one is going to make it.
@@ -164,6 +450,21 @@ title: PoE Slides
 					<img data-src="assets/poe-batch-extended.drawio.png">
 
 					<aside class="notes">
+						- sequencers adding batches concurrently
+						<br/>
+						- aggregators, best at ZKP gen
+						<br/>
+						- why should participate?
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
 						In summary, we have sequencers sending txs to the network, without having to worry about concurrency and
 						aggregators fighting to have the fastest ZK technology to consolidate as many batches as possible.
 						But why should any of them want to participate in the network?
@@ -178,11 +479,68 @@ title: PoE Slides
 					<img data-src="assets/incentives.drawio.png">
 
 					<aside class="notes">
+						- incentive layer
+						<br/>
+						- sequencers get user fees, best batches
+						<br/>
+						- sequencers -- collateral --> aggregator
+						<br/>
+						- no final formula
+						<br/>
+						- the more unconsolidated batches, more collateral
+						<br/>
+						- reach equilibrium
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
+						<br/>
 						Well, the protocol obviously has an incentive layer to attract participants.
 						The idea is that sequencers collect the fees from the txs, this way they're incentivized to came up with the best possible sequence.
 						Sequencers will have to pay a collateral to the aggregators as a reward for generating the ZKPs.
 						We don't have a final formula, but the idea is that the more unconsolidated batches there are, the more expensive the collateral is.
 						By doing so we aim to reach an equilibrium point that makes the gap between virtual and consolidatred state not too big. 
+					</aside>
+				</section>
+				<section>
+					<h2>Front running protection</h2>
+					<ul>
+						<li>Each sequencer has it's own chain ID</li>
+						<li>Txs are signed with specific chain ID and can only be included by the sequencer</li>
+					</ul>
+
+					<aside class="notes">
+						- sequencers could get front run
+						<br/>
+						- each sequencer has it's own chain ID
+						<br/>
+						- txs are signed with that chain ID
+						<br/>
+						- if someone front runs txs dont get processed
+					</aside>
+				</section>
+				<section>
+					<h2>Opening L2 fee collection</h2>
+					<ul>
+						<li>Sequencers have a low entry barrier</li>
+						<li>dApps can ask their users to use them as sequencers</li>
+						<li>dApps collect fees from their users!</li>
+						<li>Other models and specialized sequencers</li>
+					</ul>
+
+					<aside class="notes">
+						- sequencers low barrier: no HW, no stake
+						<br/>
+						- dApps UI set chainID
+						<br/>
+						- dApps collect fees
+						<br/>
+						- more advanced models: specialized sequencers
 					</aside>
 				</section>
 				<section>
